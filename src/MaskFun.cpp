@@ -400,9 +400,9 @@ static void FlowInter(
             int vyB = (VYFullB[w] * (256 - time256)) >> 8;
             int64_t dstB = prefB[vyB * ref_pitch + vxB + (w << nPelLog)];
             int dstB0 = prefB[(w << nPelLog)]; /* zero */
-            pdst[w] = (PixelType)((((dstF * (255 - MaskF[w]) + ((MaskF[w] * (dstB * (255 - MaskB[w]) + MaskB[w] * dstF0) + 255) >> 8) + 255) >> 8) * (256 - time256) +
-                                 ((dstB * (255 - MaskB[w]) + ((MaskB[w] * (dstF * (255 - MaskF[w]) + MaskF[w] * dstB0) + 255) >> 8) + 255) >> 8) * time256) >>
-                      8);
+            pdst[w] = (PixelType)((((dstF * (256 - MaskF[w]) + ((MaskF[w] * (dstB * (256 - MaskB[w]) + MaskB[w] * dstF0) + 256) >> 8) + 256) >> 8) * (256 - time256) +
+                                 ((dstB * (256 - MaskB[w]) + ((MaskB[w] * (dstF * (256 - MaskF[w]) + MaskF[w] * dstB0) + 256) >> 8) + 256) >> 8) * time256) >>
+                      8) - 1;
         }
         pdst += dst_pitch;
         prefB += ref_pitch << nPelLog;
@@ -467,9 +467,9 @@ static void FlowInterExtra(
             int medianBB = max(minfb, min(dstBB, maxfb));
             int medianFF = max(minfb, min(dstFF, maxfb));
 
-            pdst[w] = (((medianBB * MaskF[w] + dstF * (255 - MaskF[w]) + 255) >> 8) * (256 - time256) +
-                       ((medianFF * MaskB[w] + dstB * (255 - MaskB[w]) + 255) >> 8) * time256) >>
-                      8;
+            pdst[w] = ((((medianBB * MaskF[w] + dstF * (256 - MaskF[w]) + 256) >> 8) * (256 - time256) +
+                       ((medianFF * MaskB[w] + dstB * (256 - MaskB[w]) + 256) >> 8) * time256) >>
+                      8) - 1;
         }
         pdst += dst_pitch;
         prefB += ref_pitch << nPelLog;
