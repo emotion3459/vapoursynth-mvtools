@@ -79,6 +79,8 @@ struct MVDegrainData {
     int nHeight_B[3];
 
     OverlapWindows *OverWins[3];
+
+    int userWeights[13];
 };
 
 template <int radius>
@@ -227,7 +229,7 @@ static const VSFrame *VS_CC mvdegrainGetFrame(int n, int activationReason, void 
                         for (int r = 0; r < radius * 2; r++)
                             useBlock(pointers[r], strides[r], WRefs[r], isUsable[r], &fgops[r], i, pPlanes[r], pSrcCur, xx, nSrcPitches, nLogPel, plane, xSubUV, ySubUV, thSAD);
 
-                        normaliseWeights<radius>(WSrc, WRefs);
+                        normaliseWeights<radius>(WSrc, WRefs, d->userWeights);
 
                         d->DEGRAIN[plane](pDstCur[plane] + xx, nDstPitches[plane], pSrcCur[plane] + xx, nSrcPitches[plane],
                                           pointers, strides,
@@ -271,7 +273,7 @@ static const VSFrame *VS_CC mvdegrainGetFrame(int n, int activationReason, void 
                         for (int r = 0; r < radius * 2; r++)
                             useBlock(pointers[r], strides[r], WRefs[r], isUsable[r], &fgops[r], i, pPlanes[r], pSrcCur, xx, nSrcPitches, nLogPel, plane, xSubUV, ySubUV, thSAD);
 
-                        normaliseWeights<radius>(WSrc, WRefs);
+                        normaliseWeights<radius>(WSrc, WRefs, d->userWeights);
 
                         d->DEGRAIN[plane](tmpBlock, tmpBlockPitch, pSrcCur[plane] + xx, nSrcPitches[plane],
                                           pointers, strides,
@@ -519,6 +521,25 @@ static void VS_CC mvdegrainCreate(const VSMap *in, VSMap *out, void *userData, V
     MVDegrainData *data;
 
     int err;
+
+
+    int userWeightCount = vsapi->mapNumElements(in, "weights");
+    if (userWeightCount == -1) {
+        for (int r = 0; r <= radius * 2; r++) {
+            d.userWeights[r] = 1;
+        }
+    } else if (userWeightCount != radius * 2 + 1) {
+        vsapi->mapSetError(out, (filter + ": Must provide " + std::to_string(radius * 2 + 1) + " weights if weights are provided.").c_str());
+        return;
+    } else {
+        for (int r = 0; r <= radius * 2; r++) {
+            d.userWeights[r] = vsapi->mapGetInt(in, "weights", r, &err);
+            if (err) {
+                vsapi->mapSetError(out, (filter + ": Error reading weights.").c_str());
+                return;
+            }
+        }
+    }
 
     d.thSAD[0] = vsapi->mapGetInt(in, "thsad", 0, &err);
     if (err)
@@ -822,7 +843,8 @@ extern "C" void mvdegrainsRegister(VSPlugin *plugin, const VSPLUGINAPI *vspapi) 
                  "limitc:int:opt;"
                  "thscd1:int:opt;"
                  "thscd2:int:opt;"
-                 "opt:int:opt;",
+                 "opt:int:opt;"
+                 "weights:int[]:opt;",
                 "clip:vnode;",
                  mvdegrainCreate<1>, 0, plugin);
     vspapi->registerFunction("Degrain2",
@@ -839,7 +861,8 @@ extern "C" void mvdegrainsRegister(VSPlugin *plugin, const VSPLUGINAPI *vspapi) 
                  "limitc:int:opt;"
                  "thscd1:int:opt;"
                  "thscd2:int:opt;"
-                 "opt:int:opt;",
+                 "opt:int:opt;"
+                 "weights:int[]:opt;",
                 "clip:vnode;",
                  mvdegrainCreate<2>, 0, plugin);
     vspapi->registerFunction("Degrain3",
@@ -858,7 +881,8 @@ extern "C" void mvdegrainsRegister(VSPlugin *plugin, const VSPLUGINAPI *vspapi) 
                  "limitc:int:opt;"
                  "thscd1:int:opt;"
                  "thscd2:int:opt;"
-                 "opt:int:opt;",
+                 "opt:int:opt;"
+                 "weights:int[]:opt;",
                 "clip:vnode;",
                  mvdegrainCreate<3>, 0, plugin);
     vspapi->registerFunction("Degrain4",
@@ -879,7 +903,8 @@ extern "C" void mvdegrainsRegister(VSPlugin *plugin, const VSPLUGINAPI *vspapi) 
                  "limitc:int:opt;"
                  "thscd1:int:opt;"
                  "thscd2:int:opt;"
-                 "opt:int:opt;",
+                 "opt:int:opt;"
+                 "weights:int[]:opt;",
                 "clip:vnode;",
                  mvdegrainCreate<4>, 0, plugin);
     vspapi->registerFunction("Degrain5",
@@ -902,7 +927,8 @@ extern "C" void mvdegrainsRegister(VSPlugin *plugin, const VSPLUGINAPI *vspapi) 
                  "limitc:int:opt;"
                  "thscd1:int:opt;"
                  "thscd2:int:opt;"
-                 "opt:int:opt;",
+                 "opt:int:opt;"
+                 "weights:int[]:opt;",
                 "clip:vnode;",
                  mvdegrainCreate<5>, 0, plugin);
     vspapi->registerFunction("Degrain6",
@@ -927,7 +953,8 @@ extern "C" void mvdegrainsRegister(VSPlugin *plugin, const VSPLUGINAPI *vspapi) 
                  "limitc:int:opt;"
                  "thscd1:int:opt;"
                  "thscd2:int:opt;"
-                 "opt:int:opt;",
+                 "opt:int:opt;"
+                 "weights:int[]:opt;",
                 "clip:vnode;",
                  mvdegrainCreate<6>, 0, plugin);
 }
