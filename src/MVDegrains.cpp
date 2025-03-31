@@ -522,7 +522,6 @@ static void VS_CC mvdegrainCreate(const VSMap *in, VSMap *out, void *userData, V
 
     int err;
 
-
     int userWeightCount = vsapi->mapNumElements(in, "weights");
     if (userWeightCount == -1) {
         for (int r = 0; r <= radius * 2; r++) {
@@ -532,8 +531,18 @@ static void VS_CC mvdegrainCreate(const VSMap *in, VSMap *out, void *userData, V
         vsapi->mapSetError(out, (filter + ": Must provide " + std::to_string(radius * 2 + 1) + " weights if weights are provided.").c_str());
         return;
     } else {
-        for (int r = 0; r <= radius * 2; r++) {
-            d.userWeights[r] = vsapi->mapGetInt(in, "weights", r, &err);
+        d.userWeights[0] = vsapi->mapGetInt(in, "weights", radius, &err);
+        if (err) {
+            vsapi->mapSetError(out, (filter + ": Error reading weights.").c_str());
+            return;
+        }
+        for (int r = 0; r < radius; r++) {
+            d.userWeights[r * 2 + 1] = vsapi->mapGetInt(in, "weights", radius - (r + 1), &err);
+            if (err) {
+                vsapi->mapSetError(out, (filter + ": Error reading weights.").c_str());
+                return;
+            }
+            d.userWeights[r * 2 + 2] = vsapi->mapGetInt(in, "weights", radius + (r + 1), &err);
             if (err) {
                 vsapi->mapSetError(out, (filter + ": Error reading weights.").c_str());
                 return;

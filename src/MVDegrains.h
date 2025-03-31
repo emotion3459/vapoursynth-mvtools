@@ -211,13 +211,15 @@ static inline void normaliseWeights(int &WSrc, int *WRefs, int *userWeights) {
     // normalise weights to 256
     WSrc = 256;
     int WSum = WSrc * userWeights[0];
-    for (int r = 0; r < radius * 2; r++)
-        WSum += WRefs[r] * userWeights[r + 1];
+    for (int r = 0; r < radius * 2; r++) {
+        WRefs[r] *= userWeights[r + 1];
+        WSum += WRefs[r];
+    }
 
     double scale = 256.0 / WSum;
 
     for (int r = 0; r < radius * 2; r++) {
-        WRefs[r] = WRefs[r] * scale;
+        WRefs[r] *= scale;
         WSrc -= WRefs[r];
     }
 }
